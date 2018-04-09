@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: A starter AWS Lambda function.
+Resources:
+  PythonLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: A starter AWS Lambda function.
+      Runtime: python2.7
+      Handler: handler.main
+      CodeUri: ./dist
+      MemorySize: 128
+
+  PythonLambdaArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: python-lambda-arn
+      Description: ARN for python lambda example
+      Type: String
+      Value: !GetAtt PythonLambda.Arn

@@ -1,0 +1,286 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CodePipeline for deploying SAM based applications
+Parameters:
+  TargetStackName:
+    Type: String
+    Description: The name of the application stack to create/update
+  CodeCommitRepoName:
+    Type: String
+    Description: The name of the code commit repo
+    Default: undefined
+  CodeCommitBranch:
+    Type: String
+    Description: The name of the branch to deploy/trigger-deploy
+    Default: master
+  S3SourceBucket:
+    Type: String
+    Description: The bucket where we are storing our source
+    Default: undefined
+  S3SourceKey:
+    Type: String
+    Description: The key where we are storing our source
+    Default: undefined
+  CodeCommitBranch:
+    Type: String
+    Description: The name of the branch to deploy/trigger-deploy
+    Default: master
+  RuntimeVersion:
+    Type: String
+    Description: The name of the branch to deploy/trigger-deploy
+    Default: python:2.7.12
+  LambdaSourceS3Bucket:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: SSM parameter for getting the bucket where to store our lambda source
+
+Conditions:
+  UseS3ForSource: !Equals [ !Ref CodeCommitRepoName, undefined]
+
+Resources:
+  ArtifactStoreS3:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete # since built artifacts can be regenerated
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  PipeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codebuild.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: pipeline-buid-role
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:GetObjectVersion
+                - s3:PutObject
+              Resource:
+                - !Sub arn:aws:s3:::${ArtifactStoreS3}/*
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource:
+                - !Sub arn:aws:s3:::${LambdaSourceS3Bucket}/*
+
+  PipeDeployRole: # TODO: Make these A) a central role and B) more specific
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - cloudformation.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerServiceFullAccess
+      Path: /
+      Policies:
+        - PolicyName: pipeline-deploy-role
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - s3:*
+                - ssm:*
+                - iam:*
+                - lambda:*
+                - ec2:*
+                - apigateway:*
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - cloudformation:CreateChangeSet
+              Resource: '*'
+
+  PipeExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+            - codebuild.amazonaws.com
+            - cloudformation.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: pipeline-exec-role
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - codepipeline:StartPipelineExecution
+              Resource: arn:aws:codepipeline:::*
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:GetObjectVersion
+                - s3:PutObject
+                - s3:PutObject
+              Resource:
+                - !Sub arn:aws:s3:::${ArtifactStoreS3}/*
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - codecommit:CancelUploadArchive
+                - codecommit:GetBranch
+                - codecommit:GetCommit
+                - codecommit:GetUploadArchiveStatus
+                - codecommit:UploadArchive
+              Resource:
+                - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${CodeCommitRepoName}
+            - Effect: Allow
+              Action:
+                - codedeploy:CreateDeployment
+                - codedeploy:GetApplicationRevision
+                - codedeploy:GetDeployment
+                - codedeploy:GetDeploymentConfig
+                - codedeploy:RegisterApplicationRevision
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - codebuild:StartBuild
+                - codebuild:BatchGetBuilds
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - cloudformation:CreateChangeSet
+                - cloudformation:DeleteChangeSet
+                - cloudformation:DescribeChangeSet
+                - cloudformation:DescribeStacks
+                - cloudformation:ExecuteChangeSet
+              Resource: '*'
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: Build step in a code pipeline
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: ARTIFACT_BUCKET_NAME
+            Value: !Ref LambdaSourceS3Bucket
+          - Name: STACK_NAME
+            Value: !Ref TargetStackName
+          # You can add more here if they are necessary for your application
+        Image: !Sub aws/codebuild/${RuntimeVersion}
+        Type: LINUX_CONTAINER
+      Name: !Sub ${AWS::StackName}-BuildProject
+      ServiceRole: !GetAtt PipeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+
+  AppPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt PipeExecutionRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: !If [UseS3ForSource, S3, CodeCommit]
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                !If
+                  - UseS3ForSource
+                  -
+                    S3Bucket: !Ref S3SourceBucket
+                    S3ObjectKey: !Ref S3SourceKey
+                  -
+                    RepositoryName: !Ref CodeCommitRepoName
+                    BranchName: !Ref CodeCommitBranch
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Sub ${AWS::StackName}-BuildProject
+              RunOrder: 1
+        - Name: DeployStage
+          Actions:
+            - Name: CreateChangeSet
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                RoleArn: !GetAtt PipeDeployRole.Arn
+                ChangeSetName: !Sub ${AWS::StackName}-ChangeSet
+                StackName: !Ref TargetStackName
+                TemplatePath: BuildOutput::sam-output-template.yml
+              RunOrder: 1
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub ${AWS::StackName}-ChangeSet
+                RoleArn: !GetAtt PipeDeployRole.Arn
+                StackName: !Ref TargetStackName
+              RunOrder: 2
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactStoreS3

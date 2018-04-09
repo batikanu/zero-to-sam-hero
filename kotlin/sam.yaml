@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Sample SAM Stack with Kotlin Lambda for simple deployment and understanding
+
+Resources:
+  KotlinLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A ultra-basic kotlin lambda.
+      Runtime: java8
+      Handler: com.github.tunagami.kground.Handler::handleRequest
+      CodeUri: ./build/libs/com.github.tunagami.kground-all.jar
+      MemorySize: 256
+
+  KotlinLambdaArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: kotlin-lambda-arn
+      Description: ARN for kotlin lambda example
+      Type: String
+      Value: !GetAtt KotlinLambda.Arn

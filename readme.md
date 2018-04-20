@@ -15,4 +15,5 @@ for your projects to have the following in your AWS infrastructure:
 You may need to tweak the IAM policies in [codepiper](./codepiper/cloudformation.yml), but you're a smart kid.  You can do it :-D
 
 ToDos:
-* Go
+* Clean up [codepiper](./codepiper/cloudformation.yml) and associated `buildspec.yml` files for each project
+* MOAR documentation ;-)

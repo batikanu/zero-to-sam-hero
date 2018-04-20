@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Sample SAM Stack with Golang Lambda for simple deployment and understanding
+Resources:
+  SamLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: A ultra-basic golang lambda.
+      Runtime: go1.x
+      Handler: target/main

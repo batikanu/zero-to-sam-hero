@@ -1,0 +1,37 @@
+version: 0.2
+
+env:
+  variables:
+    PACKAGE: "tunagami/ztsh/sample"
+
+phases:
+
+  install:
+    commands:
+
+      # AWS Codebuild Go images use /go for the $GOPATH so let's copy our
+      # application source code into that directory structure.
+      - mkdir -p "/go/src/$(dirname ${PACKAGE})"
+      - ln -s "${CODEBUILD_SRC_DIR}" "/go/src/${PACKAGE}"
+
+  pre_build:
+    commands:
+
+      # Make sure we're in the project directory within our GOPATH
+      - cd "/go/src/${PACKAGE}"
+
+      # Fetch all dependencies
+      - go get ./...
+
+  build:
+    commands:
+
+      # Build our go application
+      - GOOS=linux go build -o main
+
+      # Package our application with AWS SAM
+      - aws cloudformation package --template-file sam.yml --s3-bucket ${ARTIFACT_BUCKET_NAME} --output-template-file sam-output-template.yml
+
+artifacts:
+  files:
+    - sam-output-template.yml

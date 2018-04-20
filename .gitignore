@@ -10,3 +10,4 @@ gradle
 out
 sam-output-template.yml
 tmp
+node_modules

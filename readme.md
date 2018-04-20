@@ -1,6 +1,6 @@
 # Zero to SAM Hero
 
-This won't give you all of your lambda/etc answers, but should provide a quick launch
+This will not give you all of your lambda/etc answers, but it could provide a quick launch
 for your projects to have the following in your AWS infrastructure:
 
 * Code Pipeline
@@ -12,8 +12,7 @@ for your projects to have the following in your AWS infrastructure:
 .....
 
 
-You may need to tweak IAM policies on the [codepiper](./codepiper/cloudformation.yml)'s
-IAM policies, but your a smart kid.  You will do it :-D
+You may need to tweak the IAM policies in [codepiper](./codepiper/cloudformation.yml), but you're a smart kid.  You can do it :-D
 
 ToDos:
 * Go

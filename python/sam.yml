@@ -3,13 +3,12 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: A starter AWS Lambda function.
 Resources:
   PythonLambda:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Description: A starter AWS Lambda function.
       Runtime: python2.7
       Handler: handler.main
       CodeUri: ./dist
-      MemorySize: 128
 
   PythonLambdaArnParameter:
     Type: AWS::SSM::Parameter

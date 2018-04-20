@@ -23,7 +23,7 @@ Point this script via the SAM enabled project ([see example](https://collaborati
 
     SSM_FOR_LAMBDA_SOURCE_BUCKET=lamba-source-bucket-awesome
     # ssm key name for where we are storing the bucket name
-    # where we put lambda source code 
+    # where we put lambda source code
 
     PIPELINE_CODE_REPO=py-ground
     # CodeCommit Repository name
@@ -44,3 +44,4 @@ easy-peasy:
 * Figure out how to remove dependency in the CF that it produces on roles that are in this pipeline (in case user deletes codepipeline stack before the deployed stack which causes problems when cleaning up)
 * Move deployment role to be cetralized and shareable and `more secure`™
 * Fix ECR version of scripts
+* Create Generic Script to pass vars to and use that instead in examples

@@ -2,13 +2,10 @@
 set -e
 
 STACK_NAME=kotlin-playground
-ARTIFACT_BUCKET_NAME=YOUR_BUCKET_NAME_HERE
+ARTIFACT_BUCKET_NAME=tunagami-zero-to-sam-hero-src
 
 # Build our jar with all the required libs.
 ./gradlew shadowJar
-
-# Here we could put in a test step to stop on failed tests
-# ./gradlew test
 
 # Convert Sam to CF and push up source artifact
 aws cloudformation package \

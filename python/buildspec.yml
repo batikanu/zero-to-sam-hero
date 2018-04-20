@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - mkdir -p ./dist
+      - cp -R ./src/* ./dist
+      - pip install -r requirements.txt -t ./dist
+  build:
+    commands:
+      - python -m doctest dist/*.py
+      - echo "Deploying Artifact to ${ARTIFACT_BUCKET_NAME}"
+      - aws cloudformation package --template-file ./sam.yml --output-template-file ./sam-output-template.yml --s3-prefix ${STACK_NAME}-src --s3-bucket ${ARTIFACT_BUCKET_NAME}
+
+artifacts:
+  type: zip
+  files:
+    - sam-output-template.yml

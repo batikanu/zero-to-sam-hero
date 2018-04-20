@@ -2,16 +2,13 @@
 set -e
 
 STACK_NAME=python-playground
-ARTIFACT_BUCKET_NAME=mdm-sandbox-buckets-gf-lambdasources3bucket-5u4adjsrz462
+ARTIFACT_BUCKET_NAME=tunagami-zero-to-sam-hero-src
 
 # Create the distribution
 rm -rf ./dist
 mkdir -p ./dist
 cp -R ./src/* ./dist
 pip install -r requirements.txt -t ./dist
-
-# Run tests
-python -m doctest dist/*.py
 
 # Convert Sam to CF and push up source artifact
 aws cloudformation package \

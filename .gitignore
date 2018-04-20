@@ -8,5 +8,5 @@ build
 dist
 gradle
 out
-sam-output-template.yaml
+sam-output-template.yml
 tmp

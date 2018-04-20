@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-STACK_NAME=python-playground
-ARTIFACT_BUCKET_NAME=tunagami-zero-to-sam-hero-src
+STACK_NAME=python-ztsh-stack
+# If you ran the setup.sh script in ./start-here you can get a source bucket from this location
+# otherwise, you will need to create your own and pass it to here
+ARTIFACT_BUCKET_NAME=$(aws ssm get-parameter --name "ztsh-source-bucket" --query "Parameter.Value" --output text)
 
 # Create the distribution
 rm -rf ./dist

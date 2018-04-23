@@ -4,11 +4,38 @@ import json
 import boto3
 import os
 
-def read(key):
-    s3 = boto3.client('s3')
-    obj = s3.get_object(Bucket=os.environ['S3_BUCKET'], Key=key)
-    return json.loads(obj['Body'].read())
+def get_obj_body(key):
+    try:
+        s3 = boto3.client('s3')
 
+        json_body = json.loads(s3.get_object(
+            Bucket=os.environ['S3_BUCKET'], Key=key)['Body'].read()
+        )
+
+        return (None, json_body.get('blueprint'))
+
+    except Exception as ex:
+        return ("{0} Error: {1}".format(type(ex), ex), None)
+
+def generate_response(error, blueprint):
+    if error is not None or blueprint is None:
+        return {
+            'statusCode': '400',
+            'body': json.dumps({'error': error}) if error is not None else '{"error_message": "blueprint is not available"}',
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+        }
+    else:
+        return {
+            'statusCode': '200',
+            'body': json.dumps(blueprint),
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+        }
 
 def main(event, context):
     '''main method'''
@@ -16,14 +43,6 @@ def main(event, context):
     print('Received event:', json.dumps(event, indent=2))
     print('Received context:', context)
 
-    # Be excellent to one another.....
-    s3_obj_body = read(event.get('key_name', 'default_key_name'))
+    error, blueprint = get_obj_body(event.get('key_name', 'default_key_name'))
 
-    return {
-        'statusCode': '200',
-        'body': s3_obj_body,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-            },
-        }
+    return generate_response(error, blueprint)

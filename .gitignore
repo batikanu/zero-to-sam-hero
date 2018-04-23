@@ -12,3 +12,4 @@ out
 sam-output-template.yml
 target
 tmp
+.vscode

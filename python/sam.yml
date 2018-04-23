@@ -9,6 +9,18 @@ Resources:
       Runtime: python2.7
       Handler: handler.main
       CodeUri: ./dist
+      Environment:
+        Variables:
+          S3_BUCKET: !Sub ${AWS::StackName}-${AWS::Region}-${AWS::AccountId}
+      Policies:
+       - AWSLambdaExecute
+       - Version: '2012-10-17'
+         Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource:
+              - !Sub arn:aws:s3:::${AWS::StackName}-${AWS::Region}-${AWS::AccountId}/* # This is gross but prevents circulars
 
   PythonLambdaArnParameter:
     Type: AWS::SSM::Parameter
@@ -17,3 +29,13 @@ Resources:
       Description: ARN for python lambda example
       Type: String
       Value: !GetAtt PythonLambda.Arn
+
+  PythonLambdaReadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-${AWS::Region}-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+

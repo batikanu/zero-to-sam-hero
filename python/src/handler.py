@@ -4,7 +4,8 @@ import json
 import boto3
 import os
 
-def get_obj_body(key):
+
+def get_blueprint(key):
     try:
         s3 = boto3.client('s3')
 
@@ -17,25 +18,39 @@ def get_obj_body(key):
     except Exception as ex:
         return ("{0} Error: {1}".format(type(ex), ex), None)
 
-def generate_response(error, blueprint):
+
+def response_from(error, blueprint):
+    '''
+    >>> sorted(response_from('booo', None).items())
+    [('body', '{"error": "booo"}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '400')]
+
+    >>> sorted(response_from(None, None).items())
+    [('body', '{"error": "blueprint is not available"}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '400')]
+
+    >>> sorted(response_from(None, {"built": True}).items())
+    [('body', '{"built": true}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '200')]
+    '''
+
+    response = {'headers': {
+        'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'
+    }}
+
     if error is not None or blueprint is None:
-        return {
+        response.update({
             'statusCode': '400',
-            'body': json.dumps({'error': error}) if error is not None else '{"error_message": "blueprint is not available"}',
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-        }
+            'body': (
+                json.dumps({'error': error}) if error is not None
+                else '{"error": "blueprint is not available"}'
+            )
+        })
     else:
-        return {
+        response.update({
             'statusCode': '200',
             'body': json.dumps(blueprint),
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-        }
+        })
+
+    return response
+
 
 def main(event, context):
     '''main method'''
@@ -43,6 +58,6 @@ def main(event, context):
     print('Received event:', json.dumps(event, indent=2))
     print('Received context:', context)
 
-    error, blueprint = get_obj_body(event.get('key_name', 'default_key_name'))
+    error, blueprint = get_blueprint(event.get('key_name', 'default_key_name'))
 
-    return generate_response(error, blueprint)
+    return response_from(error, blueprint)

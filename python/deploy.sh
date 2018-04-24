@@ -12,6 +12,9 @@ mkdir -p ./dist
 cp -R ./src/* ./dist
 pip install -r requirements.txt -t ./dist
 
+# Run tests
+python -m doctest dist/*.py
+
 # Convert Sam to CF and push up source artifact
 aws cloudformation package \
   --template-file ./sam.yml \

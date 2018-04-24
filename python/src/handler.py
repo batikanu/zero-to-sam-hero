@@ -21,14 +21,17 @@ def get_blueprint(key):
 
 def response_from(error, blueprint):
     '''
-    >>> sorted(response_from('booo', None).items())
-    [('body', '{"error": "booo"}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '400')]
+    >>> def v_out(results): # Extract values except the header for test
+    ...     return [v for (k, v) in results.items() if k != 'headers']
 
-    >>> sorted(response_from(None, None).items())
-    [('body', '{"error": "blueprint is not available"}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '400')]
+    >>> v_out(response_from('booo', None))
+    ['{"error": "booo"}', '400']
 
-    >>> sorted(response_from(None, {"built": True}).items())
-    [('body', '{"built": true}'), ('headers', {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}), ('statusCode', '200')]
+    >>> v_out(response_from(None, None))
+    ['{"error": "blueprint is not available"}', '400']
+
+    >>> v_out(response_from(None, {"built": True}))
+    ['{"built": true}', '200']
     '''
 
     response = {'headers': {

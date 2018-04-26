@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 STACK_NAME=python-ztsh-piped-stack
-PIPELINE_CODE_REPO=py-ground
+PIPELINE_CODE_REPO=python-ztsh
 PIPELINE_CODE_BRANCH=master
 CODEBUILD_RUNTIME_VERSION='python:2.7.12'
 ARTIFACT_BUCKET_NAME=$(aws ssm get-parameter --name "ztsh-source-bucket" --query "Parameter.Value" --output text)

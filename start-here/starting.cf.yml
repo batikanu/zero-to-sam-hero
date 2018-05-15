@@ -15,7 +15,7 @@ Resources:
   ZtshArtifactStoreS3ArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: ztsh-source-bucket
+      Name: !Sub ${AWS::StackName}-source-bucket
       Description: Bucket for ZtSH source code
       Type: String
       Value: !Ref ZtshArtifactStoreS3

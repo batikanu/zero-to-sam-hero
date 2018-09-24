@@ -107,6 +107,8 @@ Resources:
                 - lambda:*
                 - ec2:*
                 - apigateway:*
+                - SNS:*
+                - cognito-identity:*
               Resource: '*'
             - Effect: Allow
               Action:
